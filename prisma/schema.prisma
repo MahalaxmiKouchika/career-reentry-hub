@@ -1,0 +1,290 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  password          String?
+  fullName          String?
+  googleId          String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Profile information
+  previousJobRole   String?
+  yearsOfExperience String?
+  industry          String?
+  careerBreakDuration String?
+  reasonForCareerBreak String?
+  preferredJobRole  String?
+  preferredLocation String?
+  careerGoals       String?
+  
+  // Progress tracking
+  careerReadinessScore Int @default(0)
+  dailyStreak         Int @default(0)
+  totalXP             Int @default(0)
+  currentLevel        Int @default(1)
+  
+  // Relations
+  skills              UserSkill[]
+  certifications      UserCertification[]
+  resumeData          ResumeData?
+  userProgress        UserProgress[]
+  jobApplications     JobApplication[]
+  achievements        UserAchievement[]
+  learningActivities  LearningActivity[]
+}
+
+model Skill {
+  id          String @id @default(cuid())
+  name        String @unique
+  category    String
+  description String?
+  difficulty  String // Beginner, Intermediate, Advanced
+  estimatedTime String? // e.g., "4 weeks"
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userSkills    UserSkill[]
+  jobSkills     JobSkill[]
+  courseSkills   CourseSkill[]
+}
+
+model UserSkill {
+  id         String   @id @default(cuid())
+  userId      String
+  skillId     String
+  proficiency Int      @default(0) // 0-100
+  progress    Int      @default(0) // 0-100
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+  
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, skillId])
+}
+
+model Certification {
+  id          String @id @default(cuid())
+  name        String
+  provider    String
+  description String?
+  difficulty  String
+  estimatedTime String?
+  externalUrl String?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  userCertifications UserCertification[]
+  courseCertifications CourseCertification[]
+}
+
+model UserCertification {
+  id             String   @id @default(cuid())
+  userId         String
+  certificationId String
+  status         String // Not Started, In Progress, Completed
+  progress       Int      @default(0) // 0-100
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+  deadline       DateTime?
+  
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, certificationId])
+}
+
+model ResumeData {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  fileName  String
+  filePath  String
+  fileSize  Int
+  mimeType String
+  extractedText String?
+  parsedData Json? // Store parsed resume data as JSON
+  
+  uploadedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Job {
+  id          String @id @default(cuid())
+  title       String
+  company     String
+  location    String
+  description String?
+  requirements String?
+  salary      String?
+  jobType     String? // Full-time, Part-time, Contract, Remote
+  experienceLevel String? // Entry, Mid, Senior
+  externalUrl String?
+  
+  isActive    Boolean @default(true)
+  postedAt    DateTime @default(now())
+  expiresAt   DateTime?
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  jobSkills        JobSkill[]
+  jobApplications  JobApplication[]
+}
+
+model JobSkill {
+  id     String @id @default(cuid())
+  jobId  String
+  skillId String
+  required Boolean @default(true)
+  
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  
+  @@unique([jobId, skillId])
+}
+
+model JobApplication {
+  id          String   @id @default(cuid())
+  userId      String
+  jobId       String
+  status      String   // Applied, Interviewing, Offered, Rejected, Withdrawn
+  matchPercentage Int?
+  notes       String?
+  
+  appliedAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, jobId])
+}
+
+model UserProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime @default(now())
+  
+  // Daily metrics
+  skillsLearned       Int @default(0)
+  certificationsCompleted Int @default(0)
+  jobsApplied         Int @default(0)
+  xpEarned           Int @default(0)
+  studyTimeMinutes   Int @default(0)
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, date])
+}
+
+model Achievement {
+  id          String @id @default(cuid())
+  name        String
+  description String
+  icon        String?
+  badgeColor  String?
+  xpReward    Int @default(0)
+  
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  userAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id            String   @id @default(cuid())
+  userId        String
+  achievementId String
+  earnedAt      DateTime @default(now())
+  
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, achievementId])
+}
+
+model Course {
+  id          String @id @default(cuid())
+  title       String
+  description String?
+  provider    String?
+  duration    String?
+  difficulty  String?
+  externalUrl String?
+  thumbnailUrl String?
+  
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  courseSkills CourseSkill[]
+  courseCertifications CourseCertification[]
+}
+
+model CourseSkill {
+  id       String @id @default(cuid())
+  courseId  String
+  skillId   String
+  
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  skill  Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  
+  @@unique([courseId, skillId])
+}
+
+model CourseCertification {
+  id             String @id @default(cuid())
+  courseId        String
+  certificationId String
+  
+  course        Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  certification Certification @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  
+  @@unique([courseId, certificationId])
+}
+
+model LearningActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  activityType String   // Course Started, Skill Learned, Certification Completed, etc.
+  description String
+  xpEarned    Int      @default(0)
+  
+  createdAt   DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AIAnalysis {
+  id            String   @id @default(cuid())
+  userId        String
+  analysisType  String   // Resume Analysis, Skill Gap Analysis, etc.
+  input         Json     // Input data for analysis
+  output        Json     // Analysis results
+  confidence    Float?   // AI confidence score
+  
+  createdAt     DateTime @default(now())
+  
+  // This could be linked to User if needed
+  // user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
