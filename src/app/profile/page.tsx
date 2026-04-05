@@ -29,7 +29,13 @@ export default function ProfilePage() {
     previousJobRole: 'Your Previous Role',
     yearsOfExperience: 'Your Experience Level',
     industry: 'Your Industry',
-    highestEducation: "Your Education Background"
+    highestEducation: "Your Education Background",
+    targetRole: 'Your Career Goal',
+    preferredLocation: 'Your Preferred Location',
+    learningGoal: 'Your Learning Goal',
+    careerGap: 'Your Career Gap',
+    interests: [] as string[],
+    skills: [] as string[]
   })
   const [resumeFile, setResumeFile] = useState<File | null>(null)
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
@@ -56,16 +62,29 @@ export default function ProfilePage() {
             previousJobRole: data.previous_role || 'Your Previous Role',
             yearsOfExperience: data.experience_years || 'Your Experience Level',
             industry: data.target_role || 'Your Industry',
-            highestEducation: data.education || 'Your Education Background'
+            highestEducation: data.education || 'Your Education Background',
+            targetRole: data.target_role || 'Your Career Goal',
+            preferredLocation: data.preferred_location || 'Your Preferred Location',
+            learningGoal: data.learning_goal || 'Your Learning Goal',
+            careerGap: data.career_gap || 'Your Career Gap',
+            interests: data.interests || [],
+            skills: data.skills || []
           })
         } else {
+          // Only signup data available
           setProfileData({
             fullName: userName || 'Your Name',
             email: userEmail || 'your.email@example.com',
             previousJobRole: 'Your Previous Role',
             yearsOfExperience: 'Your Experience Level',
             industry: 'Your Industry',
-            highestEducation: 'Your Education Background'
+            highestEducation: 'Your Education Background',
+            targetRole: 'Your Career Goal',
+            preferredLocation: 'Your Preferred Location',
+            learningGoal: 'Your Learning Goal',
+            careerGap: 'Your Career Gap',
+            interests: [],
+            skills: []
           })
         }
       }
@@ -135,7 +154,10 @@ export default function ProfilePage() {
           previous_role: profileData.previousJobRole,
           experience_years: profileData.yearsOfExperience,
           education: profileData.highestEducation,
-          target_role: profileData.industry
+          target_role: profileData.targetRole,
+          preferred_location: profileData.preferredLocation,
+          learning_goal: profileData.learningGoal,
+          career_gap: profileData.careerGap
         }
         localStorage.setItem(`careerAssessment_${userEmail}`, JSON.stringify(updatedUserData))
         setUserData(updatedUserData)
@@ -251,7 +273,7 @@ export default function ProfilePage() {
                 <CardDescription>{profileData.email}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div className="flex items-center gap-2 text-sm">
                     <Briefcase className="w-4 h-4 text-gray-500" />
                     <span>{profileData.previousJobRole}</span>
@@ -261,19 +283,49 @@ export default function ProfilePage() {
                     <span>{profileData.yearsOfExperience}</span>
                   </div>
                   
+                  {/* Target Role */}
+                  {profileData.targetRole && profileData.targetRole !== 'Your Career Goal' && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-green-600">🎯</span>
+                      </div>
+                      <span className="text-gray-700">{profileData.targetRole}</span>
+                    </div>
+                  )}
+                  
+                  {/* Preferred Location */}
+                  {profileData.preferredLocation && profileData.preferredLocation !== 'Your Preferred Location' && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-blue-600">📍</span>
+                      </div>
+                      <span className="text-gray-700">{profileData.preferredLocation}</span>
+                    </div>
+                  )}
+                  
+                  {/* Career Gap */}
+                  {profileData.careerGap && profileData.careerGap !== 'Your Career Gap' && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <div className="w-4 h-4 bg-orange-100 rounded-full flex items-center justify-center">
+                        <span className="text-xs text-orange-600">⏱️</span>
+                      </div>
+                      <span className="text-gray-700">{profileData.careerGap}</span>
+                    </div>
+                  )}
+                  
                   {/* Skills Section */}
-                  {userData?.skills && userData.skills.length > 0 && (
+                  {profileData.skills && profileData.skills.length > 0 && (
                     <div className="mt-4">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Skills</h4>
                       <div className="flex flex-wrap gap-1">
-                        {userData.skills.slice(0, 6).map((skill, index) => (
+                        {profileData.skills.slice(0, 6).map((skill, index) => (
                           <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                             {skill}
                           </span>
                         ))}
-                        {userData.skills.length > 6 && (
+                        {profileData.skills.length > 6 && (
                           <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                            +{userData.skills.length - 6} more
+                            +{profileData.skills.length - 6} more
                           </span>
                         )}
                       </div>
@@ -281,31 +333,43 @@ export default function ProfilePage() {
                   )}
                   
                   {/* Interests Section */}
-                  {userData?.interests && userData.interests.length > 0 && (
+                  {profileData.interests && profileData.interests.length > 0 && (
                     <div className="mt-4">
                       <h4 className="text-sm font-medium text-gray-700 mb-2">Interests</h4>
                       <div className="flex flex-wrap gap-1">
-                        {userData.interests.slice(0, 3).map((interest, index) => (
+                        {profileData.interests.slice(0, 3).map((interest, index) => (
                           <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
                             {interest}
                           </span>
                         ))}
-                        {userData.interests.length > 3 && (
+                        {profileData.interests.length > 3 && (
                           <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                            +{userData.interests.length - 3} more
+                            +{profileData.interests.length - 3} more
                           </span>
                         )}
                       </div>
                     </div>
                   )}
                   
-                  {/* Career Goal Section */}
-                  {userData?.target_role && (
+                  {/* Learning Goal */}
+                  {profileData.learningGoal && profileData.learningGoal !== 'Your Learning Goal' && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">Career Goal</h4>
-                      <p className="text-xs text-gray-600">{userData.target_role}</p>
+                      <h4 className="text-sm font-medium text-gray-700 mb-1">Learning Goal</h4>
+                      <p className="text-xs text-gray-600 bg-gray-50 p-2 rounded">{profileData.learningGoal}</p>
                     </div>
                   )}
+                  
+                  {/* Account Status */}
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-500">Account Status</span>
+                      <span className="px-2 py-1 bg-green-100 text-green-700 rounded-full">Active</span>
+                    </div>
+                    <div className="flex items-center justify-between text-xs mt-2">
+                      <span className="text-gray-500">Member Since</span>
+                      <span className="text-gray-700">{new Date().toLocaleDateString()}</span>
+                    </div>
+                  </div>
                   
                   {profilePhoto && (
                     <div className="text-xs text-green-600 bg-green-50 p-2 rounded">
@@ -386,16 +450,91 @@ export default function ProfilePage() {
                     </div>
                   </div>
 
-                  {/* Career Goal Display */}
-                  {userData?.target_role && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <h4 className="text-sm font-medium text-gray-700 mb-2">Current Career Goal</h4>
-                      <p className="text-sm text-gray-600">{userData.target_role}</p>
-                      {userData?.learning_goal && (
-                        <p className="text-xs text-gray-500 mt-1">Learning Goal: {userData.learning_goal}</p>
-                      )}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="targetRole">Target Role</Label>
+                      <Input
+                        id="targetRole"
+                        value={profileData.targetRole}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, targetRole: e.target.value }))}
+                        placeholder="e.g., Senior Software Developer"
+                      />
                     </div>
-                  )}
+                    <div className="space-y-2">
+                      <Label htmlFor="preferredLocation">Preferred Location</Label>
+                      <Input
+                        id="preferredLocation"
+                        value={profileData.preferredLocation}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, preferredLocation: e.target.value }))}
+                        placeholder="e.g., Remote, New York, San Francisco"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="careerGap">Career Gap</Label>
+                      <Input
+                        id="careerGap"
+                        value={profileData.careerGap}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, careerGap: e.target.value }))}
+                        placeholder="e.g., 2-3 years, No gap"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="learningGoal">Learning Goal</Label>
+                      <Input
+                        id="learningGoal"
+                        value={profileData.learningGoal}
+                        onChange={(e) => setProfileData(prev => ({ ...prev, learningGoal: e.target.value }))}
+                        placeholder="e.g., Learn new technologies, Career transition"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Skills and Interests Display */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Current Skills</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {profileData.skills.length > 0 ? (
+                          profileData.skills.slice(0, 8).map((skill, index) => (
+                            <span key={index} className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                              {skill}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-500">No skills added yet</span>
+                        )}
+                        {profileData.skills.length > 8 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            +{profileData.skills.length - 8} more
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Skills can be updated in onboarding</p>
+                    </div>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">Current Interests</h4>
+                      <div className="flex flex-wrap gap-1">
+                        {profileData.interests.length > 0 ? (
+                          profileData.interests.slice(0, 6).map((interest, index) => (
+                            <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+                              {interest}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="text-xs text-gray-500">No interests added yet</span>
+                        )}
+                        {profileData.interests.length > 6 && (
+                          <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                            +{profileData.interests.length - 6} more
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 mt-2">Interests can be updated in onboarding</p>
+                    </div>
+                  </div>
 
                   {/* Resume Upload Section */}
                   <div id="resume-upload" className="space-y-4">

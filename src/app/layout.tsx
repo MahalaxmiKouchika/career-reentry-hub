@@ -1,9 +1,12 @@
 import type { Metadata } from 'next'
-import { Inter } from 'next/font/google'
+import { Open_Sans } from 'next/font/google'
 import './globals.css'
 import Header from '@/components/header'
 
-const inter = Inter({ subsets: ['latin'] })
+const openSans = Open_Sans({ 
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800']
+})
 
 export const metadata: Metadata = {
   title: 'Career Re-Entry Hub',
@@ -17,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={openSans.className}>
         <Header />
         <main>{children}</main>
       </body>

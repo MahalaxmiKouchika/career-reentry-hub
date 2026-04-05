@@ -1,4 +1,4 @@
-// File: C:\Users\mahal\OneDrive\Desktop\ammu\project\src\app\dashboard\page.tsx
+// File: C:\Users\mahal\OneDrive\Desktop\maha\html css\hackathon\career-reentry-hub\career-reentry-hub\src\app\dashboard\page.tsx
 import * as entry from '../../../../src/app/dashboard/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

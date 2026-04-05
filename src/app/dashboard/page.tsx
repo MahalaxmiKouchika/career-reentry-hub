@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
+import ScheduleAssessmentModal from '@/components/ScheduleAssessmentModal'
 import { 
   TrendingUp, 
   Award, 
@@ -30,23 +31,38 @@ interface UserData {
   [key: string]: any
 }
 
+interface ScheduledAssessment {
+  id: string
+  userEmail: string
+  scheduledDate: string
+  assessmentType: string
+  notes: string
+  status: string
+  createdAt: string
+  reminderSent: boolean
+}
+
 export default function DashboardPage() {
   const [userData, setUserData] = useState<UserData | null>(null)
   const [userStats, setUserStats] = useState({
-    careerReadinessScore: 75,
-    dailyStreak: 12,
-    totalXP: 2450,
-    completedSkills: 8,
-    jobApplications: 15
+    careerReadinessScore: 0,
+    dailyStreak: 0,
+    totalXP: 0,
+    completedSkills: 0,
+    jobApplications: 0
   })
   const [aiRecommendations, setAiRecommendations] = useState<any>(null)
   const [isLoadingAI, setIsLoadingAI] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false)
+  const [scheduledAssessments, setScheduledAssessments] = useState<ScheduledAssessment[]>([])
+  const [userEmail, setUserEmail] = useState<string>('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const userEmail = localStorage.getItem('userEmail')
       if (userEmail) {
+        setUserEmail(userEmail)
         const assessmentData = localStorage.getItem(`careerAssessment_${userEmail}`)
         if (assessmentData) {
           const data = JSON.parse(assessmentData)
@@ -57,6 +73,25 @@ export default function DashboardPage() {
             careerReadinessScore: Math.min(100, data.skills.length * 15 + 20),
             completedSkills: data.skills.length
           }))
+        }
+        
+        // Load user progress data
+        const progressData = localStorage.getItem(`userProgress_${userEmail}`)
+        if (progressData) {
+          const progress = JSON.parse(progressData)
+          setUserStats(prev => ({
+            ...prev,
+            dailyStreak: progress.dailyStreak || 0,
+            totalXP: progress.totalXP || 0,
+            jobApplications: progress.jobApplications || 0
+          }))
+        }
+        
+        // Load scheduled assessments
+        const scheduledData = localStorage.getItem(`scheduledAssessments_${userEmail}`)
+        if (scheduledData) {
+          const assessments = JSON.parse(scheduledData)
+          setScheduledAssessments(assessments)
         }
       }
     }
@@ -69,12 +104,23 @@ export default function DashboardPage() {
     setAiError(null)
     
     try {
+      // Combine user data with current stats for comprehensive analysis
+      const comprehensiveData = {
+        ...userData,
+        currentStats: userStats,
+        scheduledAssessments: scheduledAssessments,
+        // Add activity patterns for better analysis
+        lastActive: new Date().toISOString(),
+        engagementLevel: calculateEngagementLevel(userStats, scheduledAssessments),
+        careerProgress: calculateCareerProgress(userStats, userData)
+      }
+      
       const response = await fetch('/api/ai', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userData }),
+        body: JSON.stringify({ userData: comprehensiveData }),
       })
       
       if (!response.ok) {
@@ -96,6 +142,41 @@ export default function DashboardPage() {
     }
   }
 
+  // Calculate user engagement level based on stats
+  const calculateEngagementLevel = (stats: any, assessments: any[]) => {
+    let score = 0
+    
+    // Daily streak contribution (max 30 points)
+    score += Math.min(30, stats.dailyStreak * 2.5)
+    
+    // XP contribution (max 25 points)
+    score += Math.min(25, stats.totalXP / 100)
+    
+    // Applications contribution (max 25 points)
+    score += Math.min(25, stats.jobApplications * 1.5)
+    
+    // Scheduled assessments contribution (max 20 points)
+    score += Math.min(20, assessments.length * 10)
+    
+    if (score >= 80) return 'high'
+    if (score >= 50) return 'medium'
+    return 'low'
+  }
+
+  // Calculate overall career progress
+  const calculateCareerProgress = (stats: any, userData: any) => {
+    const readinessScore = stats.careerReadinessScore
+    const skillCount = userData.skills?.length || 0
+    const experienceLevel = parseInt(userData.experience_years?.split('-')[0]) || 0
+    
+    return {
+      readinessScore,
+      skillCount,
+      experienceLevel,
+      overallProgress: (readinessScore + (skillCount * 5) + (experienceLevel * 3)) / 3
+    }
+  }
+
   // Button click handlers
   const handleViewAllSkills = () => {
     console.log('View All Skills clicked')
@@ -111,8 +192,8 @@ export default function DashboardPage() {
 
   const handleScheduleAssessment = () => {
     console.log('Schedule Assessment clicked')
-    // Navigate to assessment page
-    window.location.href = '/onboarding'
+    // Open the scheduling modal instead of redirecting
+    setIsScheduleModalOpen(true)
   }
 
   const handleBrowseAllJobs = () => {
@@ -127,10 +208,78 @@ export default function DashboardPage() {
     window.location.href = '/dashboard/analysis'
   }
 
+  const handleResetProgress = () => {
+    if (userEmail && confirm('Are you sure you want to reset all your progress? This will set all scores to 0 and cannot be undone.')) {
+      // Reset all user progress to 0
+      const resetStats = {
+        careerReadinessScore: 0,
+        dailyStreak: 0,
+        totalXP: 0,
+        completedSkills: 0,
+        jobApplications: 0
+      }
+      
+      // Clear all progress data
+      localStorage.removeItem(`userProgress_${userEmail}`)
+      localStorage.removeItem(`careerAssessment_${userEmail}`)
+      localStorage.removeItem(`scheduledAssessments_${userEmail}`)
+      localStorage.removeItem('onboardingComplete')
+      
+      // Reset state
+      setUserStats(resetStats)
+      setUserData(null)
+      setScheduledAssessments([])
+      
+      // Redirect to onboarding to start fresh
+      window.location.href = '/onboarding'
+    }
+  }
+
   const handleJobApply = (jobTitle: string) => {
     console.log(`Apply for ${jobTitle}`)
     // Navigate to job application or open modal
     alert(`Application process for ${jobTitle} would start here`)
+  }
+
+  const handleAssessmentScheduled = (assessment: ScheduledAssessment) => {
+    setScheduledAssessments(prev => [...prev, assessment])
+    console.log('Assessment scheduled:', assessment)
+  }
+
+  const handleCancelAssessment = (assessmentId: string) => {
+    const updatedAssessments = scheduledAssessments.filter(a => a.id !== assessmentId)
+    setScheduledAssessments(updatedAssessments)
+    
+    // Update localStorage
+    if (userEmail) {
+      localStorage.setItem(`scheduledAssessments_${userEmail}`, JSON.stringify(updatedAssessments))
+    }
+    
+    console.log('Assessment cancelled:', assessmentId)
+  }
+
+  const handleRescheduleAssessment = (assessmentId: string) => {
+    // Cancel current assessment and open modal for rescheduling
+    handleCancelAssessment(assessmentId)
+    setIsScheduleModalOpen(true)
+  }
+
+  const formatScheduledDate = (dateString: string) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+  }
+
+  const getUpcomingAssessment = () => {
+    const now = new Date()
+    return scheduledAssessments
+      .filter(a => a.status === 'scheduled' && new Date(a.scheduledDate) > now)
+      .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())[0]
   }
 
   const skillGaps = userData ? [
@@ -340,6 +489,8 @@ export default function DashboardPage() {
     }
   }
 
+  const upcomingAssessment = getUpcomingAssessment()
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="container mx-auto px-4 max-w-7xl">
@@ -352,10 +503,28 @@ export default function DashboardPage() {
               <p className="text-gray-600">Track your career re-entry progress and discover new opportunities</p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" className="flex items-center gap-2" onClick={handleScheduleAssessment}>
-                <Calendar className="w-4 h-4" />
-                Schedule Assessment
-              </Button>
+              {upcomingAssessment ? (
+                <div className="flex items-center gap-2 p-2 bg-green-50 border border-green-200 rounded-lg">
+                  <Calendar className="w-4 h-4 text-green-600" />
+                  <div className="text-sm">
+                    <div className="font-medium text-green-900">Next Assessment</div>
+                    <div className="text-green-700">{formatScheduledDate(upcomingAssessment.scheduledDate)}</div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" onClick={() => handleRescheduleAssessment(upcomingAssessment.id)}>
+                      Reschedule
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleCancelAssessment(upcomingAssessment.id)}>
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="outline" className="flex items-center gap-2" onClick={handleScheduleAssessment}>
+                  <Calendar className="w-4 h-4" />
+                  Schedule Assessment
+                </Button>
+              )}
               <Button 
                 className="flex items-center gap-2" 
                 onClick={fetchAIRecommendations}
@@ -367,6 +536,14 @@ export default function DashboardPage() {
                   <Brain className="w-4 h-4" />
                 )}
                 {isLoadingAI ? 'Getting AI Insights...' : 'Get AI Recommendations'}
+              </Button>
+              <Button 
+                variant="destructive" 
+                size="sm"
+                onClick={handleResetProgress}
+                className="flex items-center gap-2"
+              >
+                Reset Progress
               </Button>
             </div>
           </div>
@@ -588,64 +765,65 @@ export default function DashboardPage() {
 
       {aiRecommendations && (
         <div className="space-y-8 mb-8">
+          {/* Personalized Insights Section */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Brain className="w-5 h-5 text-purple-600" />
-                AI-Powered Career Insights
+                Your Personalized Career Insights
               </CardTitle>
-              <CardDescription>Personalized recommendations based on your profile</CardDescription>
+              <CardDescription>Analysis based on your career readiness, engagement, and progress</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Skills to Learn */}
+                {/* Strengths */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-4">Skills to Learn</h4>
-                  <div className="space-y-3">
-                    {aiRecommendations.skills_to_learn?.slice(0, 4).map((skill: any, index: number) => (
-                      <div key={index} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                        <div className="flex items-start gap-3">
-                          <CheckCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-                          <div>
-                            <h5 className="font-medium text-blue-900">{skill.skill}</h5>
-                            <p className="text-sm text-blue-700">{skill.reason}</p>
-                          </div>
-                        </div>
+                  <h4 className="font-medium text-green-900 mb-4 flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    Your Strengths
+                  </h4>
+                  <div className="space-y-2">
+                    {aiRecommendations.insights.strengths.map((strength: string, index: number) => (
+                      <div key={index} className="p-3 bg-green-50 rounded-lg border border-green-200">
+                        <p className="text-green-800">{strength}</p>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* Recommended Courses */}
+                {/* Areas for Improvement */}
                 <div>
-                  <h4 className="font-medium text-gray-900 mb-4">Recommended Courses</h4>
-                  <div className="space-y-3">
-                    {aiRecommendations.courses?.slice(0, 3).map((course: any, index: number) => (
-                      <div key={index} className="p-3 bg-green-50 rounded-lg border border-green-200">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1">
-                            <h5 className="font-medium text-green-900">{course.name}</h5>
-                            <p className="text-sm text-green-700">{course.platform}</p>
-                          </div>
-                          {course.link !== 'N/A' && (
-                            <Button size="sm" variant="outline" asChild>
-                              <a href={course.link} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="w-3 h-3" />
-                              </a>
-                            </Button>
-                          )}
-                        </div>
+                  <h4 className="font-medium text-orange-900 mb-4 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    Areas for Improvement
+                  </h4>
+                  <div className="space-y-2">
+                    {aiRecommendations.insights.weaknesses.map((weakness: string, index: number) => (
+                      <div key={index} className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                        <p className="text-orange-800">{weakness}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Career Roadmap */}
+              {/* Recommendations */}
               <div className="mt-8">
-                <h4 className="font-medium text-gray-900 mb-4">Your Career Roadmap</h4>
+                <h4 className="font-medium text-blue-900 mb-4">Personalized Recommendations</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {aiRecommendations.insights.recommendations.map((recommendation: string, index: number) => (
+                    <div key={index} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+                      <p className="text-blue-800">{recommendation}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Next Steps */}
+              <div className="mt-8">
+                <h4 className="font-medium text-purple-900 mb-4">Your Next Steps</h4>
                 <div className="space-y-3">
-                  {aiRecommendations.career_roadmap?.map((step: string, index: number) => (
+                  {aiRecommendations.insights.next_steps.map((step: string, index: number) => (
                     <div key={index} className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
                       <div className="w-8 h-8 bg-purple-600 text-white rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0">
                         {index + 1}
@@ -717,6 +895,14 @@ export default function DashboardPage() {
           </Card>
         </div>
       )}
+      
+      {/* Schedule Assessment Modal */}
+      <ScheduleAssessmentModal
+        isOpen={isScheduleModalOpen}
+        onClose={() => setIsScheduleModalOpen(false)}
+        onSchedule={handleAssessmentScheduled}
+        userEmail={userEmail}
+      />
     </div>
   )
 }

@@ -126,6 +126,17 @@ export default function OnboardingPage() {
     const userEmail = localStorage.getItem('userEmail') || 'user@example.com'
     localStorage.setItem(`careerAssessment_${userEmail}`, JSON.stringify(formData))
     localStorage.setItem('onboardingComplete', 'true')
+    
+    // Initialize user progress tracking for new users
+    const initialProgress = {
+      dailyStreak: 1, // Start with day 1 after completing onboarding
+      totalXP: 50, // Award XP for completing onboarding
+      jobApplications: 0,
+      lastActiveDate: new Date().toISOString(),
+      completedSkills: formData.skills.length || 0
+    }
+    localStorage.setItem(`userProgress_${userEmail}`, JSON.stringify(initialProgress))
+    
     window.location.href = '/dashboard'
   }
 
