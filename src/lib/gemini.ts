@@ -187,12 +187,12 @@ export async function generateRecommendations(userData: any): Promise<AIRecommen
           ...(isSeniorLevel ? [{ 
             skill: "Architecture Patterns", 
             reason: "Essential for senior frontend roles and system design",
-            priority: 'medium'
+            priority: 'medium' as const
           }] : []),
           ...(hasCareerGap && gapDuration > 1 ? [{ 
             skill: "Modern CSS Frameworks", 
             reason: "Quick way to update outdated frontend skills",
-            priority: 'high'
+            priority: 'high' as const
           }] : [])
         ],
         courses: [
@@ -310,12 +310,12 @@ export async function generateRecommendations(userData: any): Promise<AIRecommen
           ...(isSeniorLevel ? [{ 
             skill: "Microservices Architecture", 
             reason: "Essential for scalable backend systems",
-            priority: 'medium'
+            priority: 'medium' as const
           }] : []),
           ...(hasCareerGap ? [{ 
             skill: "Cloud Platforms", 
             reason: "Modern backend development requires cloud knowledge",
-            priority: 'high'
+            priority: 'high' as const
           }] : [])
         ],
         courses: [
@@ -433,12 +433,12 @@ export async function generateRecommendations(userData: any): Promise<AIRecommen
           ...(isSeniorLevel ? [{ 
             skill: "System Architecture", 
             reason: "Essential for full-stack system design",
-            priority: 'medium'
+            priority: 'medium' as const
           }] : []),
           ...(hasCareerGap ? [{ 
             skill: "MEAN/MERN Stack", 
             reason: "Popular full-stack technology stacks",
-            priority: 'high'
+            priority: 'high' as const
           }] : [])
         ],
         courses: [
@@ -557,12 +557,12 @@ export async function generateRecommendations(userData: any): Promise<AIRecommen
           ...(isEntryLevel ? [{ 
             skill: "Problem Solving", 
             reason: "Fundamental skill for all developers",
-            priority: 'high'
+            priority: 'high' as const
           }] : []),
           ...(hasCareerGap ? [{ 
             skill: "Modern Development Tools", 
             reason: "Updated tools and workflows",
-            priority: 'high'
+            priority: 'high' as const
           }] : [])
         ],
         courses: [
